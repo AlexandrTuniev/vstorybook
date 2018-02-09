@@ -13,6 +13,7 @@
     props: {
       change: Function,
       onFocus: Function,
+      onKeyup: Function,
     },
     data() {
       return {
@@ -24,6 +25,9 @@
       let mqtextarea = document.querySelector(".mq-textarea>textarea");
       mqtextarea.addEventListener("focus", (e) => {
         this.onFocus && this.onFocus(e);
+      });
+      mqtextarea.addEventListener("keyup", (e)=>{
+        this.onKeyup && this.onKeyup(e);
       });
     },
     methods: {
