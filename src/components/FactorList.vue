@@ -1,5 +1,5 @@
 <template>
-  <draggable class="factor-list-container" :options="{group:'factors'}">
+  <draggable :list="list" class="factor-list-container" :options="{group:'factors'}">
     <slot></slot>
   </draggable>
 </template>
@@ -9,6 +9,9 @@
 
   export default {
     name: "factor-list",
+    props: {
+      list: Array,
+    },
     components: {
       draggable,
     },

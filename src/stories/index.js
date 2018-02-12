@@ -109,7 +109,7 @@ storiesOf("Welcome", module)
       }
     },
     template: `<div style="padding: 140px;">
-                    <factor-list>
+                    <factor-list :list="list1">
                         <factor   ref="factors" 
                                   v-for="(element, index) in list1"
                                   v-bind:key="element.id" 
@@ -176,8 +176,8 @@ storiesOf("Welcome", module)
         header: text("header", "Factor")
       }
     },
-    template: `<div style="padding: 100px; padding-top: 140px; display:flex; justify-content: space-between;">
-                    <factor-list>
+    template: `<div style="padding: 100px; padding-top: 140px; display:flex;">
+                    <factor-list :list="list1">
                         <factor   ref="factors" 
                                   v-for="(element, index) in list1"
                                   v-bind:key="element.id" 
@@ -187,7 +187,8 @@ storiesOf("Welcome", module)
                                   :submit-handler="onSubmit"
                                   :headerText="header"/>
                     </factor-list>
-                    <factor-list>
+                    <div style="height: 40px; width: 40px;"></div>
+                    <factor-list :list="list2">
                         <factor   ref="factors" 
                                   v-for="(element, index) in list2"
                                   v-bind:key="element.id" 
@@ -197,6 +198,105 @@ storiesOf("Welcome", module)
                                   :submit-handler="onSubmit"
                                   :headerText="header"/>
                     </factor-list>
+               </div>`,
+
+    methods: {
+      onClick(el, factor) {
+        const restFactors = this.$refs.factors.filter((f) => {
+          return f !== factor
+        });
+        restFactors.forEach((f) => {f.hidePopup()});
+      },
+      onShow(element) {
+      },
+      onSubmit(value, element) {
+        if (this.validate(value, element.value)) {
+
+          let parts = (value + '').split("\\cdot");
+          //TODO generate UID's
+          let newItems = parts.map((num) => {
+            return { value: num, id: Math.floor((Math.random() * 10000) + 1) }
+          });
+          let idx = this.list1.indexOf(element);
+          if(idx !==-1){
+            this.list1.splice(idx, 1);
+            this.list1.splice(idx, 0, ...newItems);
+          } else{
+            idx = this.list2.indexOf(element);
+            this.list2.splice(idx, 1);
+            this.list2.splice(idx, 0, ...newItems);
+          }
+        } else {
+          alert("Something wrong");
+        }
+
+      },
+      validate(value, result) {
+        let parts = (value + '').split("\\cdot");
+        let acc = 1;
+        let prod = parts.reduce((acc, factor) => {
+          return acc * factor;
+        });
+        return +result === prod;
+      }
+    },
+  }))
+  .add('Triple factor-list with tippy', () => ({
+    components: { FactorList, Factor },
+    data() {
+      return {
+        typpy: null,
+        selectedElement: {},
+        inputModel: 0,
+        list1: [
+          { value: 12, id: 0 },
+          { value: -4, id: 1 },
+        ],
+        list2: [
+        ],
+        list3: [
+        ],
+        header: text("header", "Factor")
+      }
+    },
+    template: `<div style="padding: 100px; padding-top: 140px; display:flex; flex-direction: column;">
+                    <div style="padding-bottom: 40px;">
+                      <factor-list :list="list1">
+                          <factor   ref="factors" 
+                                    v-for="(element, index) in list1"
+                                    v-bind:key="element.id" 
+                                    :factor="element" 
+                                    :click-handler="onClick"
+                                    :showOperator="index !==0"
+                                    :submit-handler="onSubmit"
+                                    :headerText="header"/>
+                      </factor-list>
+                    </div>
+                    <div style="display: inline-flex;">
+                      <factor-list :list="list2">
+                          <factor   ref="factors" 
+                                    v-for="(element, index) in list2"
+                                    v-bind:key="element.id" 
+                                    :factor="element" 
+                                    :click-handler="onClick"
+                                    :showOperator="index !==0"
+                                    :submit-handler="onSubmit"
+                                    :headerText="header"/>
+                      </factor-list>
+                      <div style="height: 50px; width: 40px;text-align: center;font-size: 40px;">+</div>
+                      <factor-list :list="list3">
+                          <factor   ref="factors" 
+                                    v-for="(element, index) in list3"
+                                    v-bind:key="element.id" 
+                                    :factor="element" 
+                                    :click-handler="onClick"
+                                    :showOperator="index !==0"
+                                    :submit-handler="onSubmit"
+                                    :headerText="header"/>
+                      </factor-list>
+                      <div style="height: 50px; width: 40px;text-align: center;font-size: 40px;">=</div>
+                      <div style="height: 50px; width: 40px;text-align: center;font-size: 40px;">−2</div>
+                    </div>
                </div>`,
 
     methods: {
