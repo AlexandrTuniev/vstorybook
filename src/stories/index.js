@@ -85,7 +85,7 @@ storiesOf("Welcome", module)
     components: { Numberline },
     data() {
       return {
-        numbers: array('numbers', ["-2", "3"], ',').map((e) => {return +e;}),
+        numbers: array('numbers', ["-2", "3"], ','),
       }
     },
     template: `<div style="width: 200px; height: 150px;">

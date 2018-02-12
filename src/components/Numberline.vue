@@ -1,12 +1,13 @@
 <template>
-    <div id="box" ref="box" class="jxgbox"
-         style="width:100%; height:100%;"></div>
+  <div id="box" ref="box" class="jxgbox"
+       style="width:100%; height:100%;"></div>
 </template>
 
 <script>
   if (typeof JXG === "undefined") {
     throw "MathQuill is undefined";
   }
+  import Tippy from 'tippy.js';
   export default {
     name: "jsxgraph",
     props: {
@@ -15,7 +16,11 @@
     },
     mounted() {
       let board = this.init();
-      this.draw(this.numbers, board);
+      let parsedNums = this.stripVariables(this.numbers);
+      this.draw(parsedNums, board);
+      Tippy("[title]", {
+        interactiveBorder: 4,
+      });
     },
     methods: {
       init() {
@@ -23,7 +28,8 @@
         let minPoint = 0;
         let maxPoint = 0;
         let sum = 0;
-        this.numbers.forEach((num) => {
+        let parsedNums = this.stripVariables(this.numbers);
+        parsedNums.forEach((num) => {
           sum += num;
           if (minPoint > sum) {
             minPoint = sum;
@@ -46,13 +52,23 @@
           firstArrow: true,
           lastArrow: true,
           ticks: {
-            drawZero: true,
-            majorHeight: 10,
-            minorTicks: 0,
             insertTicks: false,
+            scaleSymbol: 'x',
+            drawZero: true,
+            ticksDistance: 1,
+            majorHeight: 20,
+            tickEndings: [1, 1],
+            minorTicks: 0,
+            label: { fontSize: 10, offset: [0, -8], },
+            anchorX: 'middle',
           }
         });
         return board;
+      },
+      stripVariables(numbers){
+        return numbers.map((num) => {
+          return +num.replace(/[^\d|\-]/g,"");
+        });
       },
       draw(nums, board) {
         let sum = 0;
@@ -60,12 +76,22 @@
           let s = board.create("arrow",
             [[sum, this.yOffset - i - 1], [n + sum, this.yOffset - i - 1]],
             {
-              label: {
-                position: "top",
-              },
               fixed: true,
+              strokeWidth: 3,
+              label: {
+                offset: [0, 8],
+                anchorX: 'middle',
+                position: 'top'
+              },
             });
-          s.setLabel(n > 0 ? "+" + n.toString() : n.toString());
+          s.setLabel(n > 0 ? "+" + n.toString()+ 'x' : n.toString() + 'x');
+          let tip;
+          if (n > 0)
+            tip = "positive so it moves to the right";
+          else
+            tip = "negative so it moves to the left";
+          s.rendNode.setAttribute("title", tip);
+
           board.create("segment",
             [[sum, this.yOffset - i], [sum, this.yOffset - i - 1]],
             {
@@ -81,21 +107,40 @@
             color: "red",
             fixed: true,
           });
-        board.create("point", [0, this.yOffset],
+        let startPoint = board.create("point", [0, this.yOffset],
           {
-            color: "blue",
-            name: "",
             fixed: true,
+            color: "green",
+            name: "start",
+            draggable: false,
+            label: {
+              offset: [0, 6],
+              anchorX: 'middle',
+              anchorY: 'bottom',
+            }
           });
-        board.create("point", [sum, this.yOffset],
+        startPoint.rendNode.setAttribute("title", "start from 0");
+        startPoint.label.rendNode.setAttribute("title", "start from 0");
+        let endPoint = board.create("point", [sum, this.yOffset],
           {
+            fixed: true,
+
             color: "red",
-            name: "",
-            fixed: true,
+            name: "end",
+            draggable: false,
+            showInfobox: false,
+            label: {
+              offset: [0, 6],
+              anchorX: 'middle',
+              anchorY: 'bottom',
+            }
           });
+        endPoint.rendNode.setAttribute("title", "result of computation");
+        endPoint.label.rendNode.setAttribute("title", "result of computation");
       }
     }
   }
+
 </script>
 
 <style>
