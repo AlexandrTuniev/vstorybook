@@ -10,7 +10,7 @@ import {
 } from '@storybook/addon-knobs';
 
 import MathQuillInput from '../components/MathQuillInput.vue';
-import  MathQuillStatic from '../components/MathQuillStatic.vue';
+import MathQuillStatic from '../components/MathQuillStatic.vue';
 import EntryBox from '../components/Entrybox.vue';
 import Numberline from '../components/Numberline.vue';
 import Factor from '../components/Factor.vue';
@@ -41,9 +41,8 @@ storiesOf("Welcome", module)
     template: `<div style="height: 50px; width: 120px">
                     <math-quill-static ref='mathquill' :value="'5x+3'"></math-quill-static>
                </div>`,
-    methods: {
-    },
-    data(){
+    methods: {},
+    data() {
       return {
         header: text('math', '5x+3'),
       }
@@ -110,7 +109,7 @@ storiesOf("Welcome", module)
       }
     },
     template: `<div style="padding: 140px;">
-                    <factor-list :list="list1">
+                    <factor-list>
                         <factor   ref="factors" 
                                   v-for="(element, index) in list1"
                                   v-bind:key="element.id" 
@@ -142,7 +141,91 @@ storiesOf("Welcome", module)
           let idx = this.list1.indexOf(element);
           this.list1.splice(idx, 1);
           this.list1.splice(idx, 0, ...newItems);
-        }else{
+        } else {
+          alert("Something wrong");
+        }
+
+      },
+      validate(value, result) {
+        let parts = (value + '').split("\\cdot");
+        let acc = 1;
+        let prod = parts.reduce((acc, factor) => {
+          return acc * factor;
+        });
+        return +result === prod;
+      }
+    },
+  }))
+  .add('Double Factor-list with tippy', () => ({
+    components: { FactorList, Factor },
+    data() {
+      return {
+        typpy: null,
+        selectedElement: {},
+        inputModel: 0,
+        list1: [
+          { value: 12, id: 0 },
+          { value: 24, id: 1 },
+          { value: 18, id: 2 }
+        ],
+        list2: [
+          { value: 34, id: 3 },
+          { value: 6, id: 4 },
+          { value: 4, id: 5 }
+        ],
+        header: text("header", "Factor")
+      }
+    },
+    template: `<div style="padding: 100px; padding-top: 140px; display:flex; justify-content: space-between;">
+                    <factor-list>
+                        <factor   ref="factors" 
+                                  v-for="(element, index) in list1"
+                                  v-bind:key="element.id" 
+                                  :factor="element" 
+                                  :click-handler="onClick"
+                                  :showOperator="index !==0"
+                                  :submit-handler="onSubmit"
+                                  :headerText="header"/>
+                    </factor-list>
+                    <factor-list>
+                        <factor   ref="factors" 
+                                  v-for="(element, index) in list2"
+                                  v-bind:key="element.id" 
+                                  :factor="element" 
+                                  :click-handler="onClick"
+                                  :showOperator="index !==0"
+                                  :submit-handler="onSubmit"
+                                  :headerText="header"/>
+                    </factor-list>
+               </div>`,
+
+    methods: {
+      onClick(el, factor) {
+        const restFactors = this.$refs.factors.filter((f) => {
+          return f !== factor
+        });
+        restFactors.forEach((f) => {f.hidePopup()});
+      },
+      onShow(element) {
+      },
+      onSubmit(value, element) {
+        if (this.validate(value, element.value)) {
+
+          let parts = (value + '').split("\\cdot");
+          //TODO generate UID's
+          let newItems = parts.map((num) => {
+            return { value: num, id: Math.floor((Math.random() * 10000) + 1) }
+          });
+          let idx = this.list1.indexOf(element);
+          if(idx !==-1){
+            this.list1.splice(idx, 1);
+            this.list1.splice(idx, 0, ...newItems);
+          } else{
+            idx = this.list2.indexOf(element);
+            this.list2.splice(idx, 1);
+            this.list2.splice(idx, 0, ...newItems);
+          }
+        } else {
           alert("Something wrong");
         }
 
