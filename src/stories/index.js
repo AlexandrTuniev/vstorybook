@@ -242,7 +242,7 @@ storiesOf("Welcome", module)
     },
   }))
   .add('Triple factor-list with tippy', () => ({
-    components: { FactorList, Factor },
+    components: { FactorList, Factor, MathQuillStatic },
     data() {
       return {
         typpy: null,
@@ -263,6 +263,7 @@ storiesOf("Welcome", module)
                     <div style="padding-bottom: 40px;">
                       <factor-list :list="list1">
                           <factor   ref="factors" 
+                                    :list-name="'list1'"
                                     v-for="(element, index) in list1"
                                     v-bind:key="element.id" 
                                     :factor="element" 
@@ -275,6 +276,7 @@ storiesOf("Welcome", module)
                     <div style="display: inline-flex;">
                       <factor-list :list="list2">
                           <factor   ref="factors" 
+                                    :list-name="'list2'"
                                     v-for="(element, index) in list2"
                                     v-bind:key="element.id" 
                                     :factor="element" 
@@ -283,9 +285,12 @@ storiesOf("Welcome", module)
                                     :submit-handler="onSubmit"
                                     :headerText="header"/>
                       </factor-list>
-                      <div style="height: 50px; width: 40px;text-align: center;font-size: 40px;">+</div>
+                      <div style="font-size: 24px;  padding: 4px; margin: 5px; display: flex;">
+                        <math-quill-static :value="'+'"/>
+                      </div>
                       <factor-list :list="list3">
                           <factor   ref="factors" 
+                                    :list-name="'list3'"
                                     v-for="(element, index) in list3"
                                     v-bind:key="element.id" 
                                     :factor="element" 
@@ -294,11 +299,11 @@ storiesOf("Welcome", module)
                                     :submit-handler="onSubmit"
                                     :headerText="header"/>
                       </factor-list>
-                      <div style="height: 50px; width: 40px;text-align: center;font-size: 40px;">=</div>
-                      <div style="height: 50px; width: 40px;text-align: center;font-size: 40px;">−2</div>
+                      <div style="font-size: 24px;  padding: 4px; margin: 5px; display: flex;">
+                        <math-quill-static :value="'=-2'"/>
+                      </div>
                     </div>
                </div>`,
-
     methods: {
       onClick(el, factor) {
         const restFactors = this.$refs.factors.filter((f) => {
@@ -308,7 +313,7 @@ storiesOf("Welcome", module)
       },
       onShow(element) {
       },
-      onSubmit(value, element) {
+      onSubmit(value, element, listName) {
         if (this.validate(value, element.value)) {
 
           let parts = (value + '').split("\\cdot");
@@ -316,14 +321,10 @@ storiesOf("Welcome", module)
           let newItems = parts.map((num) => {
             return { value: num, id: Math.floor((Math.random() * 10000) + 1) }
           });
-          let idx = this.list1.indexOf(element);
+          let idx = this[listName].indexOf(element);
           if(idx !==-1){
-            this.list1.splice(idx, 1);
-            this.list1.splice(idx, 0, ...newItems);
-          } else{
-            idx = this.list2.indexOf(element);
-            this.list2.splice(idx, 1);
-            this.list2.splice(idx, 0, ...newItems);
+            this[listName].splice(idx, 1);
+            this[listName].splice(idx, 0, ...newItems);
           }
         } else {
           alert("Something wrong");

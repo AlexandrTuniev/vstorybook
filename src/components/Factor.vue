@@ -30,6 +30,7 @@
       submitHandler: Function,
       showOperator: Boolean,
       headerText: String,
+      listName:String,
     },
     data() {
       return {
@@ -56,7 +57,7 @@
       },
       okHandler() {
         let value = this.$refs.mathquill.getLatex();
-        this.submitHandler && this.submitHandler(value, this.factor);
+        this.submitHandler && this.submitHandler(value, this.factor, this.listName);
         this.hidePopup();
       }
     },
