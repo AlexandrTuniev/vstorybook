@@ -44,7 +44,6 @@
                      v-bind:class="{disabled:disabled, 'cancel-hidden':cancelHidden}"
                      @click="okHandler">OK
                 </div>
-
                 <div class="el-entry-box-button cancel-button"
                      v-bind:class="{disabled:disabled, 'cancel-hidden':cancelHidden}"
                      @click="cancelHandler">CANCEL

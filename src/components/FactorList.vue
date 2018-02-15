@@ -1,5 +1,7 @@
 <template>
-  <draggable :list="list" class="factor-list-container" :options="{group:'factors'}">
+  <draggable :list="list" class="factor-list-container"
+             :options="dOptions"
+             @change="onChange">
     <slot></slot>
   </draggable>
 </template>
@@ -11,10 +13,16 @@
     name: "factor-list",
     props: {
       list: Array,
+      dOptions: Object,
     },
     components: {
       draggable,
     },
+    methods:{
+      onChange(e){
+        this.$emit('change', e, this.dOptions.name);
+      }
+    }
   }
 </script>
 
@@ -26,5 +34,18 @@
     background: #E6E6E7;
     justify-content: space-between;
     min-width: 40px;
+  }
+
+  .sortable-ghost {
+    opacity: 0.1;
+    border: 1px dashed;
+  }
+
+  .sortable-chosen {
+    background: white;
+  }
+
+  .sortable-drag {
+    opacity: 1;
   }
 </style>

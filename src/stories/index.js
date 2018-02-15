@@ -15,6 +15,8 @@ import EntryBox from '../components/Entrybox.vue';
 import Numberline from '../components/Numberline.vue';
 import Factor from '../components/Factor.vue';
 import FactorList from '../components/FactorList.vue';
+import draggable from 'vuedraggable';
+import * as _ from 'lodash';
 
 storiesOf("Welcome", module)
   .addDecorator(withKnobs)
@@ -36,18 +38,18 @@ storiesOf("Welcome", module)
       }
     },
   }))
-  .add('MathQuill static', () => ({
-    components: { MathQuillStatic },
-    template: `<div style="height: 50px; width: 120px">
-                    <math-quill-static ref='mathquill' :value="'5x+3'"></math-quill-static>
-               </div>`,
-    methods: {},
-    data() {
-      return {
-        header: text('math', '5x+3'),
-      }
-    }
-  }))
+  // .add('MathQuill static', () => ({
+  //   components: { MathQuillStatic },
+  //   template: `<div style="height: 50px; width: 120px">
+  //                   <math-quill-static ref='mathquill' :value="'5x+3'"></math-quill-static>
+  //              </div>`,
+  //   methods: {},
+  //   data() {
+  //     return {
+  //       header: text('math', '5x+3'),
+  //     }
+  //   }
+  // }))
   .add('EntryBox', () => {
     const header = text('Header', 'Combine to');
     return {
@@ -156,7 +158,7 @@ storiesOf("Welcome", module)
       }
     },
   }))
-  .add('Double Factor-list with tippy', () => ({
+  .add('Double factor-list with tippy', () => ({
     components: { FactorList, Factor },
     data() {
       return {
@@ -218,10 +220,10 @@ storiesOf("Welcome", module)
             return { value: num, id: Math.floor((Math.random() * 10000) + 1) }
           });
           let idx = this.list1.indexOf(element);
-          if(idx !==-1){
+          if (idx !== -1) {
             this.list1.splice(idx, 1);
             this.list1.splice(idx, 0, ...newItems);
-          } else{
+          } else {
             idx = this.list2.indexOf(element);
             this.list2.splice(idx, 1);
             this.list2.splice(idx, 0, ...newItems);
@@ -241,27 +243,71 @@ storiesOf("Welcome", module)
       }
     },
   }))
-  .add('Triple factor-list with tippy', () => ({
-    components: { FactorList, Factor, MathQuillStatic },
+  .add('Triple factor-list with equation', () => ({
+    components: { FactorList, Factor, MathQuillStatic, draggable },
     data() {
       return {
         typpy: null,
         selectedElement: {},
         inputModel: 0,
-        list1: [
-          { value: 12, id: 0 },
-          { value: -4, id: 1 },
+        equation: [
+          { value: 12, id: 13 },
+          { value: 'x^2', id: 14, ignore: true },
+          { value: '-2', id: 15 },
+          { value: 'x', id: 16, ignore: true },
+          { value: -4, id: 17 }
         ],
-        list2: [
-        ],
-        list3: [
-        ],
-        header: text("header", "Factor")
+        list1: [],
+        list2: [],
+        list3: [],
+        list4: [],
+        draggedItemsFromEquation: [],
+        header: text("header", "Factor"),
+        equationDOption: {
+          name: "equationList",
+          filter: '.ignore',
+          group: {
+            name: 'equation',
+            pull: 'clone',
+            put: false,
+            revertClone: true,
+          },
+          animation: 200,
+          sort: false
+        },
+        dOptionsForFactors: {
+          name: "factorsList",
+          group: {
+            name: 'factors',
+            put: 'equation',
+          },
+          animation: 200,
+        },
+        dOptionsForAddends: {
+          name: "addendsList",
+          group: {
+            name: 'addends',
+            put: ['factors', 'addends'],
+          }, animation: 200
+        },
+        dOptionsForSum: {
+          name: "sumList",
+          group: {
+            name: 'sum',
+            put: 'equation',
+          },
+        }
       }
     },
     template: `<div style="padding: 100px; padding-top: 140px; display:flex; flex-direction: column;">
+                    <div>
+                      <draggable @end="onEnd" @start="onStart" @change="onChange" :list="equation" style="display: inline-flex; align-items: flex-end;"  
+                      :options="equationDOption" @clone="onClone" :move="onMove">
+                        <factor  v-bind:key="el.id" :ignore="el.ignore" v-for="el in equation" :as-static="true" :factor="el"></factor>
+                      </draggable>
+                    </div>
                     <div style="padding-bottom: 40px;">
-                      <factor-list :list="list1">
+                      <factor-list :list="list1" :dOptions="dOptionsForFactors" @change="onChange">
                           <factor   ref="factors" 
                                     :list-name="'list1'"
                                     v-for="(element, index) in list1"
@@ -273,8 +319,9 @@ storiesOf("Welcome", module)
                                     :headerText="header"/>
                       </factor-list>
                     </div>
+                    
                     <div style="display: inline-flex;">
-                      <factor-list :list="list2">
+                      <factor-list :list="list2" :d-options="dOptionsForAddends">
                           <factor   ref="factors" 
                                     :list-name="'list2'"
                                     v-for="(element, index) in list2"
@@ -288,7 +335,7 @@ storiesOf("Welcome", module)
                       <div style="font-size: 24px;  padding: 4px; margin: 5px; display: flex;">
                         <math-quill-static :value="'+'"/>
                       </div>
-                      <factor-list :list="list3">
+                      <factor-list :list="list3" :d-options="dOptionsForAddends">
                           <factor   ref="factors" 
                                     :list-name="'list3'"
                                     v-for="(element, index) in list3"
@@ -300,8 +347,19 @@ storiesOf("Welcome", module)
                                     :headerText="header"/>
                       </factor-list>
                       <div style="font-size: 24px;  padding: 4px; margin: 5px; display: flex;">
-                        <math-quill-static :value="'=-2'"/>
+                        <math-quill-static :value="'='"/>
                       </div>
+                      <factor-list :list="list4" :d-options="dOptionsForSum" @change="onChange">
+                          <factor   ref="factors" 
+                                    :list-name="'list4'"
+                                    v-for="(element, index) in list4"
+                                    v-bind:key="element.id" 
+                                    :factor="element" 
+                                    :click-handler="onClick"
+                                    :showOperator="index !==0"
+                                    :submit-handler="onSubmit"
+                                    :headerText="header"/>
+                      </factor-list>
                     </div>
                </div>`,
     methods: {
@@ -315,14 +373,13 @@ storiesOf("Welcome", module)
       },
       onSubmit(value, element, listName) {
         if (this.validate(value, element.value)) {
-
           let parts = (value + '').split("\\cdot");
           //TODO generate UID's
           let newItems = parts.map((num) => {
             return { value: num, id: Math.floor((Math.random() * 10000) + 1) }
           });
           let idx = this[listName].indexOf(element);
-          if(idx !==-1){
+          if (idx !== -1) {
             this[listName].splice(idx, 1);
             this[listName].splice(idx, 0, ...newItems);
           }
@@ -338,6 +395,42 @@ storiesOf("Welcome", module)
           return acc * factor;
         });
         return +result === prod;
+      },
+      onEnd(e) {
+        //console.log(e);
+      },
+      onStart(e) {
+        //console.log(e);
+      },
+      onChange(e, listName) {
+        if (listName === 'factorsList' && e.added) {
+          this.draggedItemsFromEquation.push(e.added.element.id);
+        }
+        if (listName === 'sumList' && e.added) {
+          //this.draggedItemsFromEquation.push(e.added.element.id);
+          this.list4.splice(0, this.list4.length);
+          this.list4.push(e.added.element);
+        }
+
+      },
+
+      onClone: function(/**Event*/evt) {
+        let origEl = evt.item;
+        let cloneEl = evt.clone;
+      },
+      onMove(evt) {
+
+        if (this.checkList(evt, "sumList")) {
+          return true;
+        }
+        let alreadyDragged = _.includes(this.draggedItemsFromEquation, evt.draggedContext.element.id);
+        return !alreadyDragged;
+      },
+      checkList(event, name) {
+        return (event.relatedContext.component.dOptions &&
+          event.relatedContext.component.dOptions.name === name) ||
+          (event.relatedContext.component.$parent.dOptions &&
+            event.relatedContext.component.$parent.dOptions.name === name);
       }
     },
   }));
