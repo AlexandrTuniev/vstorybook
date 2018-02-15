@@ -8,6 +8,8 @@
     throw "MathQuill is undefined";
   }
   import Tippy from 'tippy.js';
+  import * as _ from 'lodash';
+
   export default {
     name: "jsxgraph",
     props: {
@@ -15,15 +17,28 @@
       yOffset: Number,
     },
     mounted() {
-      let board = this.init();
+      let board;
+      let chResult = this.checkNumbers(this.numbers);
       let parsedNums = this.stripVariables(this.numbers);
-      this.draw(parsedNums, board);
+      switch (chResult) {
+        case 'variables':
+          board = this.init(true);
+          this.draw(parsedNums, board, true);
+          break;
+        case 'non-variables':
+          board = this.init(false);
+          this.draw(parsedNums, board, false);
+          break;
+        case 'mixed':
+          alert('Contains mixed terms!');
+          break;
+      }
       Tippy("[title]", {
         interactiveBorder: 4,
       });
     },
     methods: {
-      init() {
+      init(scaleByX) {
         // getting extreme points
         let minPoint = 0;
         let maxPoint = 0;
@@ -53,7 +68,7 @@
           lastArrow: true,
           ticks: {
             insertTicks: false,
-            scaleSymbol: 'x',
+            scaleSymbol: scaleByX ? 'x' : '',
             drawZero: true,
             ticksDistance: 1,
             majorHeight: 20,
@@ -65,12 +80,23 @@
         });
         return board;
       },
-      stripVariables(numbers){
+      checkNumbers(numbers) {
+        let allVariables = _.every(numbers, (num) => {return num.indexOf('x') > -1});
+        let allNonVariables = _.every(numbers, (num) => {return num.indexOf('x') === -1});
+        if (allVariables) {
+          return 'variables';
+        } else if (allNonVariables) {
+          return 'non-variables';
+        } else {
+          return 'mixed';
+        }
+      },
+      stripVariables(numbers) {
         return numbers.map((num) => {
-          return +num.replace(/[^\d|\-]/g,"");
+          return +num.replace(/[^\d|\-]/g, "");
         });
       },
-      draw(nums, board) {
+      draw(nums, board, scaleByX) {
         let sum = 0;
         for (let [i, n] of nums.entries()) {
           let s = board.create("arrow",
@@ -84,12 +110,14 @@
                 position: 'top'
               },
             });
-          s.setLabel(n > 0 ? "+" + n.toString()+ 'x' : n.toString() + 'x');
+          s.setLabel(n > 0 ? "+" + n.toString() + (scaleByX ? 'x' : '') : n.toString() + (scaleByX ? 'x' : ''));
           let tip;
-          if (n > 0)
+          if (n > 0) {
             tip = "positive so it moves to the right";
-          else
+          } else {
             tip = "negative so it moves to the left";
+          }
+
           s.rendNode.setAttribute("title", tip);
 
           board.create("segment",
@@ -124,7 +152,6 @@
         let endPoint = board.create("point", [sum, this.yOffset],
           {
             fixed: true,
-
             color: "red",
             name: "end",
             draggable: false,
