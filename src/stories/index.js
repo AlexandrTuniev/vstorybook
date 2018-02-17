@@ -7,6 +7,7 @@ import {
   text,
   boolean,
   array,
+  object
 } from '@storybook/addon-knobs';
 
 import MathQuillInput from '../components/MathQuillInput.vue';
@@ -17,39 +18,35 @@ import Factor from '../components/Factor.vue';
 import FactorList from '../components/FactorList.vue';
 import draggable from 'vuedraggable';
 import * as _ from 'lodash';
+import image from '../assets/arrow.png';
 
+let defaultBreakpoints =[{
+    absoluteDifference: 20,
+    ticksDistance: 1,
+    canvasHeight: 300,
+    canvasWidth: 150,
+  },
+  {
+    absoluteDifference: 40,
+    ticksDistance: 1,
+    canvasHeight: 600,
+    canvasWidth: 150,
+  },
+  {
+    absoluteDifference: 50,
+    ticksDistance: 2,
+    canvasHeight: 300,
+    canvasWidth: 150,
+  },
+  {
+    absoluteDifference: Infinity,
+    ticksDistance: 5,
+    canvasHeight: 300,
+    canvasWidth: 150,
+  }
+];
 storiesOf("Welcome", module)
   .addDecorator(withKnobs)
-  .add('MathQuill input', () => ({
-    components: { MathQuillInput },
-    template: `<div style="height: 50px; width: 120px">
-                    <math-quill-input ref='mathquill' :change="change"></math-quill-input>
-               </div>`,
-    methods: {
-      change: action('text changed'),
-      focus: function() {
-        this.$refs.mathquill.focus();
-      },
-      write: function(str) {
-        this.$refs.mathquill.write(str);
-      },
-      clear: function() {
-        this.$refs.mathquill.clear();
-      }
-    },
-  }))
-  // .add('MathQuill static', () => ({
-  //   components: { MathQuillStatic },
-  //   template: `<div style="height: 50px; width: 120px">
-  //                   <math-quill-static ref='mathquill' :value="'5x+3'"></math-quill-static>
-  //              </div>`,
-  //   methods: {},
-  //   data() {
-  //     return {
-  //       header: text('math', '5x+3'),
-  //     }
-  //   }
-  // }))
   .add('EntryBox', () => {
     const header = text('Header', 'Combine to');
     return {
@@ -83,178 +80,32 @@ storiesOf("Welcome", module)
       },
     }
   })
-  .add('jsxgraph', () => ({
+  .add('Numberline', () => ({
     components: { Numberline },
     data() {
       return {
         numbers: array('numbers', ["-2", "3"], ','),
+        breakpoints: object('Breakpoints', defaultBreakpoints)
       }
     },
     template: `<div style="width: 200px; height: 150px;">
-                    <Numberline :numbers="numbers" :y-offset="0"/>
+                    <Numberline :numbers="numbers" :y-offset="0" :break-points="breakpoints"/>
                </div>`,
     methods: {},
   }))
-  .add('Factor-list with tippy', () => ({
-    components: { FactorList, Factor },
-    data() {
-      return {
-        typpy: null,
-        selectedElement: {},
-        inputModel: 0,
-        list1: [
-          { value: 12, id: 0 },
-          { value: 24, id: 1 },
-          { value: 18, id: 2 }
-        ],
-        header: text("header", "Factor")
-      }
-    },
-    template: `<div style="padding: 140px;">
-                    <factor-list :list="list1">
-                        <factor   ref="factors" 
-                                  v-for="(element, index) in list1"
-                                  v-bind:key="element.id" 
-                                  :factor="element" 
-                                  :click-handler="onClick"
-                                  :showOperator="index !==0"
-                                  :submit-handler="onSubmit"
-                                  :headerText="header"/>
-                    </factor-list>
-               </div>`,
-
-    methods: {
-      onClick(el, factor) {
-        const restFactors = this.$refs.factors.filter((f) => {
-          return f !== factor
-        });
-        restFactors.forEach((f) => {f.hidePopup()});
-      },
-      onShow(element) {
-      },
-      onSubmit(value, element) {
-        if (this.validate(value, element.value)) {
-
-          let parts = (value + '').split("\\cdot");
-          //TODO generate UID's
-          let newItems = parts.map((num) => {
-            return { value: num, id: Math.floor((Math.random() * 10000) + 1) }
-          });
-          let idx = this.list1.indexOf(element);
-          this.list1.splice(idx, 1);
-          this.list1.splice(idx, 0, ...newItems);
-        } else {
-          alert("Something wrong");
-        }
-
-      },
-      validate(value, result) {
-        let parts = (value + '').split("\\cdot");
-        let acc = 1;
-        let prod = parts.reduce((acc, factor) => {
-          return acc * factor;
-        });
-        return +result === prod;
-      }
-    },
-  }))
-  .add('Double factor-list with tippy', () => ({
-    components: { FactorList, Factor },
-    data() {
-      return {
-        typpy: null,
-        selectedElement: {},
-        inputModel: 0,
-        list1: [
-          { value: 12, id: 0 },
-          { value: 24, id: 1 },
-          { value: 18, id: 2 }
-        ],
-        list2: [
-          { value: 34, id: 3 },
-          { value: 6, id: 4 },
-          { value: 4, id: 5 }
-        ],
-        header: text("header", "Factor")
-      }
-    },
-    template: `<div style="padding: 100px; padding-top: 140px; display:flex;">
-                    <factor-list :list="list1">
-                        <factor   ref="factors" 
-                                  v-for="(element, index) in list1"
-                                  v-bind:key="element.id" 
-                                  :factor="element" 
-                                  :click-handler="onClick"
-                                  :showOperator="index !==0"
-                                  :submit-handler="onSubmit"
-                                  :headerText="header"/>
-                    </factor-list>
-                    <div style="height: 40px; width: 40px;"></div>
-                    <factor-list :list="list2">
-                        <factor   ref="factors" 
-                                  v-for="(element, index) in list2"
-                                  v-bind:key="element.id" 
-                                  :factor="element" 
-                                  :click-handler="onClick"
-                                  :showOperator="index !==0"
-                                  :submit-handler="onSubmit"
-                                  :headerText="header"/>
-                    </factor-list>
-               </div>`,
-
-    methods: {
-      onClick(el, factor) {
-        const restFactors = this.$refs.factors.filter((f) => {
-          return f !== factor
-        });
-        restFactors.forEach((f) => {f.hidePopup()});
-      },
-      onShow(element) {
-      },
-      onSubmit(value, element) {
-        if (this.validate(value, element.value)) {
-
-          let parts = (value + '').split("\\cdot");
-          //TODO generate UID's
-          let newItems = parts.map((num) => {
-            return { value: num, id: Math.floor((Math.random() * 10000) + 1) }
-          });
-          let idx = this.list1.indexOf(element);
-          if (idx !== -1) {
-            this.list1.splice(idx, 1);
-            this.list1.splice(idx, 0, ...newItems);
-          } else {
-            idx = this.list2.indexOf(element);
-            this.list2.splice(idx, 1);
-            this.list2.splice(idx, 0, ...newItems);
-          }
-        } else {
-          alert("Something wrong");
-        }
-
-      },
-      validate(value, result) {
-        let parts = (value + '').split("\\cdot");
-        let acc = 1;
-        let prod = parts.reduce((acc, factor) => {
-          return acc * factor;
-        });
-        return +result === prod;
-      }
-    },
-  }))
-  .add('Triple factor-list with equation', () => ({
+  .add('Factor-list with equation', () => ({
     components: { FactorList, Factor, MathQuillStatic, draggable },
     data() {
       return {
+        image:image,
         typpy: null,
         selectedElement: {},
         inputModel: 0,
         equation: [
           { value: 12, id: 13 },
-          { value: 'x^2', id: 14, ignore: true },
+          { value: 'x^2', id: 14 },
           { value: '-2', id: 15 },
-          { value: 'x', id: 16, ignore: true },
+          { value: 'x', id: 16},
           { value: -4, id: 17 }
         ],
         list1: [],
@@ -306,8 +157,8 @@ storiesOf("Welcome", module)
                         <factor  v-bind:key="el.id" :ignore="el.ignore" v-for="el in equation" :as-static="true" :factor="el"></factor>
                       </draggable>
                     </div>
-                    <div style="padding-bottom: 40px;">
-                      <factor-list :list="list1" :dOptions="dOptionsForFactors" @change="onChange">
+                    <div style="">
+                      <factor-list style="" :list="list1" :dOptions="dOptionsForFactors" @change="onChange">
                           <factor   ref="factors" 
                                     :list-name="'list1'"
                                     v-for="(element, index) in list1"
@@ -319,7 +170,10 @@ storiesOf("Welcome", module)
                                     :headerText="header"/>
                       </factor-list>
                     </div>
-                    
+                    <div style="display: flex;">
+                      <div><img :src="image" style="transform: rotate(25deg);"/></div>
+                      <div><img :src="image"style="transform: rotate(-25deg);"/></div>
+                    </div>
                     <div style="display: inline-flex;">
                       <factor-list :list="list2" :d-options="dOptionsForAddends">
                           <factor   ref="factors" 
@@ -390,10 +244,15 @@ storiesOf("Welcome", module)
       },
       validate(value, result) {
         let parts = (value + '').split("\\cdot");
+        if ((""+result).indexOf('^') > -1) { // for validating  x^2 = x*x
+          let expParts = result.split("^");
+          return `${expParts[0]}*${expParts[0]}` === value.replace("\\cdot", "*").replace(" ", "");
+        }
         let acc = 1;
         let prod = parts.reduce((acc, factor) => {
           return acc * factor;
         });
+
         return +result === prod;
       },
       onEnd(e) {
@@ -419,7 +278,6 @@ storiesOf("Welcome", module)
         let cloneEl = evt.clone;
       },
       onMove(evt) {
-
         if (this.checkList(evt, "sumList")) {
           return true;
         }
