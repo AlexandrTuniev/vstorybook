@@ -1,16 +1,18 @@
 <template>
   <div>
     <div ref="element" class="factor-element"
-         v-bind:class="{ 'static': asStatic, 'ignore': ignore, 'highlight': selected}"
+         v-bind:class="{ 'static': asStatic, 'non-draggable': nonDraggable}"
          @click="clicked">
       <div class="factor-element-overlay"></div>
-      <math-quill-static v-show="showOperator" :value="'\\star'" />
-      <math-quill-static :value="factor.value" />
+      <math-quill-static v-show="showOperator" :value="'\\cdot'" />
+      <math-quill-static :value="factor.value"
+                         v-bind:class="{ 'highlight': selected}" />
     </div>
     <div ref="tooltip" class="factor-tooltip-content" v-show="!asStatic">
       <div class="factor-tooltip-header">{{headerText}}</div>
       <math-quill-input ref="mathquill" :onFocus="mqFocus"
-                        :change="mqChange"></math-quill-input>
+                        :change="mqChange"
+                        :on-keyup="onKeyup"></math-quill-input>
       <div class="factor-tooltip-button-container">
         <button v-on:click="multiply" class="factor-tooltip-ok-button">X
         </button>
@@ -44,7 +46,7 @@
       headerText: String,
       listName: String,
       asStatic: Boolean,
-      ignore: Boolean,
+      nonDraggable: Boolean,
       maxFactoringElements: {
         default: 4,
         type: Number
@@ -55,7 +57,6 @@
         selected: false
       }
     },
-    watch: {},
     methods: {
       mqChange(latex) {
         // Restricting max factoring number
@@ -67,18 +68,17 @@
       mqFocus() {},
       clicked() {
         if (!this.asStatic) {
+          window.removeEventListener('keyup', this.onKeyup);
           setTimeout(() => {
             this.$refs.element._tippy.show();
             this.clickHandler && this.clickHandler(this.factor, this);
             this.selected = true;
-            window.addEventListener('keyup', (e) => {
-              this.onKeyup(e);
-            }, { once: true });
+            window.addEventListener('keyup', this.onKeyup);
           }, 100);
         }
-
       },
       hidePopup() {
+        window.removeEventListener('keyup', this.onKeyup);
         this.selected = false;
         this.$refs.element._tippy.hide();
       },
@@ -91,7 +91,7 @@
         }
       },
       okHandler() {
-        let value = this.$refs.mathquill.getLatex();
+        let value = this.$refs.mathquill && this.$refs.mathquill.getLatex();
         this.submitHandler && this.submitHandler(value, this.factor, this.listName);
         this.hidePopup();
       },
@@ -141,8 +141,6 @@
 
   .factor-element {
     font-size: 24px;
-    padding: 4px;
-    margin: 5px;
     cursor: pointer;
     display: flex;
     position: relative;
@@ -153,7 +151,7 @@
     margin: 0;
   }
 
-  .factor-element.highlight {
+  .math-quill-static-container.highlight {
     background: #FDD857;
   }
 

@@ -25,5 +25,8 @@
   }
 </script>
 <style>
-
+  .math-quill-static-container {
+    display: flex;
+    align-items: flex-end;
+  }
 </style>
