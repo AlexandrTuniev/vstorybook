@@ -34,6 +34,8 @@
     background: #E6E6E7;
     justify-content: space-between;
     min-width: 40px;
+    align-items: flex-end;
+    padding: 5px;
   }
 
   .sortable-ghost {
