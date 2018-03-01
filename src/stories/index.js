@@ -142,10 +142,9 @@ storiesOf("Welcome", module)
     data() {
       return {
         mode: select("Mode", ['level0', 'level1', 'level2']),
-        // point: object('point', [-3, 2]),
-        // slope: object('slope', [-5, 2]),
         epsilonX: number("Epsilon X", 0.2),
         epsilonY: number("Epsilon Y", 0.2),
+        pickEpsilon: number("Epsilon for picking next points level1", 3),
         canvasHeight: number("Canvas height", 400),
         canvasWidth: number("Canvas width", 400),
         ticksDistance: number("Ticks Distance", 1),
@@ -169,6 +168,7 @@ storiesOf("Welcome", module)
                            :mode="mode"
                            :epsilon-x="epsilonX"
                            :epsilon-y="epsilonY"
+                           :pick-epsilon="pickEpsilon"
                            />
                </div>`,
     methods: {},
