@@ -18,6 +18,8 @@
         pointPickingInProgress: false,
         horizontalHelperLine: null,
         verticalHelperLine: null,
+        horizontalHelperLineAnchor: null,
+        verticalHelperLineAnchor: null,
         hTooltip: null,
         vTooltip: null
       }
@@ -63,26 +65,15 @@
         type: Number,
         default: 0.2
       },
-      initialPoint: {
-        type: Array,
-        default: function() {
-          return [-3, 2]
-        }
-      },
-      slope: {
-        type: Array,
-        default: function() {
-          return [-5, 2]
-        }
+      pickEpsilon: {
+        type: Number,
+        default: 3
       }
     },
     mounted() {
       let board;
       board = this.init();
       board.resizeContainer(this.canvasWidth, this.canvasHeight);
-
-      // console.log(Tippy());
-
     },
     beforeDestroy() {
       if (this.hTooltip) {
@@ -142,12 +133,29 @@
           this.pointPickingInProgress = true;
           this.pickPoint('pointA', coords, board, () => {
           });
-          this.bindMovement();
+          this.bindMovement(board);
         } else if (!this.pointB) {
           this.pickPoint('pointB', coords, board, () => {
             AB = board.create('segment', [this.pointA, this.pointB], { fixed: true, });
+
+            if (this.mode === 'level2') {
+              // invisible point to anchor tooltips
+              this.horizontalHelperLineAnchor = board.create('midpoint', [AB], {
+                size: 0,
+                name: ""
+              });
+              this.horizontalHelperLineAnchor.rendNode.setAttribute("title", `Change in X=${AB.L().toFixed(2)}`);
+              this.hTooltip = Tippy(this.horizontalHelperLineAnchor.rendNode, {
+                interactiveBorder: 4,
+                trigger: 'manual',
+                arrow: true,
+                dynamicTitle: true,
+                placement: 'bottom'
+              });
+              this.horizontalHelperLineAnchor.rendNode._tippy.show();
+            }
           });
-          this.bindMovement();
+          this.bindMovement(board);
         } else if (!this.pointC) {
           this.pickPoint('pointC', coords, board, () => {
             AC = board.create('line', [this.pointA, this.pointC], {
@@ -155,18 +163,30 @@
               color: "#5795CD"
             });
             BC = board.create('segment', [this.pointB, this.pointC], { fixed: true });
-            let p = board.create('polygon', [this.pointA, this.pointB, this.pointC], {
-              hasInnerPoints: false,
-              borderless: true
-            });
+            if (this.mode === 'level2') {
+              this.verticalHelperLineAnchor = board.create('midpoint', [BC], {
+                size: 0,
+                name: ""
+              });
+              this.verticalHelperLineAnchor.rendNode.setAttribute("title", `Change in Y=${BC.L().toFixed(2)}`);
+              this.vTooltip = Tippy(this.verticalHelperLineAnchor.rendNode, {
+                interactiveBorder: 4,
+                trigger: 'manual',
+                arrow: true,
+                dynamicTitle: true,
+                placement: 'right'
+              });
+              this.verticalHelperLineAnchor.rendNode._tippy.show();
+            }
+            let p = board.create('polygon', [this.pointA, this.pointB, this.pointC]);
             p.borders.forEach((b) => {
               b.setAttribute({ fixed: true });
             });
-            this.bindMovement();
+            this.bindMovement(board);
           });
         }
       },
-
+      // todo cleanup this, simplify  level1 and 2 share a lot in common, need to fix this
       pickPoint(point, coords, board, callback) {
         let options = {
           color: "#ED7D31",
@@ -186,12 +206,48 @@
             break;
           case 'level1':
             helperOptions.strokeWidth = 0;
-          // fall-through
-          case 'level2':
             if (point === 'pointA') {
               direction = 'horizontal';
               x = coords.usrCoords[1];
               y = coords.usrCoords[2];
+              this[point] = board.create('point', [x, y], options);
+              this.epsilonSnap(this[point]);
+              this.createHelperLine(board, direction, this[point], helperOptions);
+            }
+            if (point === 'pointB') {
+              // B can picked only on the same line as point A
+              if (Math.abs(coords.usrCoords[2] - this.pointA.Y()) > this.pickEpsilon) {
+                return;
+              }
+              direction = 'vertical';
+              x = coords.usrCoords[1];
+              y = this.pointA.Y();
+              this[point] = board.create('glider', [x, y, this.horizontalHelperLine], options);
+              this.epsilonSnap(this[point]);
+              this.createHelperLine(board, direction, this[point], helperOptions);
+            }
+            if (point === 'pointC') {
+              // B can picked only on the same line as point A
+              if (Math.abs(coords.usrCoords[1] - this.pointB.X()) > this.pickEpsilon) {
+                return;
+              }
+              x = this.pointB.X();
+              y = coords.usrCoords[2];
+              this[point] = board.create('glider', [x, y, this.verticalHelperLine], options);
+              this.epsilonSnap(this[point]);
+              this.createHelperLine(board, direction, this[point], helperOptions);
+            }
+
+            callback();
+            break;
+          case 'level2': // todo refactor
+            if (point === 'pointA') {
+              direction = 'horizontal';
+              x = coords.usrCoords[1];
+              y = coords.usrCoords[2];
+              this[point] = board.create('point', [x, y], options);
+              this.epsilonSnap(this[point]);
+              this.createHelperLine(board, direction, this[point], helperOptions);
             }
             if (point === 'pointB') {
               // B can picked only on the same line as point A
@@ -201,6 +257,9 @@
               direction = 'vertical';
               x = coords.usrCoords[1];
               y = this.pointA.Y();
+              this[point] = board.create('glider', [x, y, this.horizontalHelperLine], options);
+              this.epsilonSnap(this[point]);
+              this.createHelperLine(board, direction, this[point], helperOptions);
             }
             if (point === 'pointC') {
               // B can picked only on the same line as point A
@@ -208,56 +267,21 @@
                 return;
               }
               x = this.pointB.X();
-              y = coords.usrCoords[2]
+              y = coords.usrCoords[2];
+              this[point] = board.create('glider', [x, y, this.verticalHelperLine], options);
+              this.epsilonSnap(this[point]);
+              this.createHelperLine(board, direction, this[point], helperOptions);
             }
-            this[point] = board.create('point', [x, y], options);
-            this.epsilonSnap(this[point]);
-            this.createHelperLine(board, direction, this[point], helperOptions);
             callback();
             break;
         }
 
       },
       createHelperLine(board, direction, point, options) {
-        if (direction === 'horizontal' && options.strokeWidth) {
+        if (direction === 'horizontal') {
           this.horizontalHelperLine = board.create('line', [point, [() => {return point.X() + 1}, () => { return point.Y()}]], options);
-          this.horizontalHelperLine.rendNode.setAttribute("title", "Change in x");
-          this.hTooltip = Tippy("[title]", {
-            interactiveBorder: 4,
-            trigger: 'manual',
-            arrow: true
-          });
-          this.horizontalHelperLine.rendNode._tippy.show();
-          this.horizontalHelperLine.on('attribute:visible', (val, nval, el) => {
-            if (val !== nval && nval) {
-              el.rendNode._tippy.show();
-            }
-            if (val !== nval && !nval) {
-              el.rendNode._tippy.hide();
-            }
-          });
-
-        } else if (direction === 'vertical' && options.strokeWidth) {
-          if (this.horizontalHelperLine) {
-            this.horizontalHelperLine.setAttribute({ visible: false });
-          }
+        } else if (direction === 'vertical') {
           this.verticalHelperLine = board.create('line', [point, [() => {return point.X()}, () => {return point.Y() + 1}]], options);
-          this.verticalHelperLine.rendNode.setAttribute("title", "Change in y");
-          this.vTooltip = Tippy("[title]", {
-            interactiveBorder: 4,
-            trigger: 'manual',
-            arrow: true,
-            placement: 'right'
-          });
-          this.verticalHelperLine.rendNode._tippy.show();
-          this.verticalHelperLine.on('attribute:visible', (val, nval, el) => {
-            if (val !== nval && nval) {
-              el.rendNode._tippy.show();
-            }
-            if (val !== nval && !nval) {
-              el.rendNode._tippy.hide();
-            }
-          });
         }
       },
       checkPointCorrectness(point, xCoord, yCoord) {
@@ -273,10 +297,8 @@
         }
         return true;
       },
-      bindMovement() {
+      bindMovement(board) {
         let ADragHandler, BDragHandler, CDragHandler;
-        let BMoveHandler = () => {}, CMoveHandler = () => {},
-          BOutHandler = () => {}, COutHandler = () => {};
         if (this.mode === 'level0') {// level 0 snapping based on epsilon
           ADragHandler = () => {
             this.epsilonSnap(this.pointA);
@@ -287,71 +309,47 @@
           CDragHandler = () => {
             this.epsilonSnap(this.pointC);
           };
+          if (this.pointA && this.pointB && this.pointC) {
+            let g = board.create('group', [this.pointA, this.pointB, this.pointC]);
+            g.removeTranslationPoint(this.pointB);
+            g.removeTranslationPoint(this.pointC);
+          }
         } else if (this.mode === 'level1') { // level 1
           ADragHandler = () => {
             this.epsilonSnap(this.pointA);
-            if (this.pointB) {
-              this.pointB.moveTo([this.pointB.X(), this.pointA.Y()]);
-            }
           };
           BDragHandler = () => {
             this.epsilonSnap(this.pointB);
-            this.pointB.moveTo([this.pointB.X(), this.pointA.Y()]);
-            if (this.pointC) {
-              this.pointC.moveTo([this.pointB.X(), this.pointC.Y()]);
-            }
           };
           CDragHandler = () => {
             this.epsilonSnap(this.pointC);
-            this.pointC.moveTo([this.pointB.X(), this.pointC.Y()]);
           };
         } else if (this.mode === 'level2') {
           ADragHandler = () => {
             this.epsilonSnap(this.pointA);
             if (this.pointB) {
-              this.pointB.moveTo([this.pointB.X(), this.pointA.Y()]);
+              this.horizontalHelperLineAnchor && this.horizontalHelperLineAnchor
+                .rendNode.setAttribute("title", `Change in x=${this.pointA.Dist(this.pointB).toFixed(2)}`);
+            }
+            if (this.pointC) {
+              this.verticalHelperLineAnchor && this.verticalHelperLineAnchor
+                .rendNode.setAttribute("title", `Change in Y=${this.pointB.Dist(this.pointC).toFixed(2)}`);
             }
           };
           BDragHandler = () => {
             this.epsilonSnap(this.pointB);
-            this.pointB.moveTo([this.pointB.X(), this.pointA.Y()]);
+            this.horizontalHelperLineAnchor && this.horizontalHelperLineAnchor
+              .rendNode.setAttribute("title", `Change in X=${this.pointA.Dist(this.pointB).toFixed(2)}`);
             if (this.pointC) {
-              this.pointC.moveTo([this.pointB.X(), this.pointC.Y()]);
+              this.verticalHelperLineAnchor && this.verticalHelperLineAnchor
+                .rendNode.setAttribute("title", `Change in Y=${this.pointB.Dist(this.pointC).toFixed(2)}`);
             }
 
           };
           CDragHandler = () => {
             this.epsilonSnap(this.pointC);
-            this.pointC.moveTo([this.pointB.X(), this.pointC.Y()]);
-          };
-          BMoveHandler = () => {
-            if (this.horizontalHelperLine) {
-              this.horizontalHelperLine.setAttribute({ visible: true });
-            }
-            if (this.verticalHelperLine) {
-              this.verticalHelperLine.setAttribute({ visible: false });
-            }
-          };
-          CMoveHandler = () => {
-            if (this.horizontalHelperLine) {
-              this.horizontalHelperLine.setAttribute({ visible: false });
-            }
-            if (this.verticalHelperLine) {
-              this.verticalHelperLine.setAttribute({ visible: true });
-            }
-          };
-          BOutHandler = () => {
-            if (this.horizontalHelperLine) {
-              this.horizontalHelperLine.setAttribute({ visible: false });
-            }
-            if (this.verticalHelperLine && !this.pointC) {
-              this.verticalHelperLine.setAttribute({ visible: true });
-            }
-          };
-          COutHandler = () => {
-            if (this.verticalHelperLine) {
-              this.verticalHelperLine.setAttribute({ visible: false });
-            }
+            this.verticalHelperLineAnchor && this.verticalHelperLineAnchor
+              .rendNode.setAttribute("title", `Change in Y=${this.pointB.Dist(this.pointC).toFixed(2)}`);
           };
         }
         this.pointA.off('drag', ADragHandler);
@@ -361,10 +359,6 @@
         this.pointA.on('drag', ADragHandler);
         this.pointB && this.pointB.on('drag', BDragHandler);
         this.pointC && this.pointC.on('drag', CDragHandler);
-        this.pointB && this.pointB.on('move', BMoveHandler);
-        this.pointC && this.pointC.on('move', CMoveHandler);
-        this.pointB && this.pointB.on('out', BOutHandler);
-        this.pointC && this.pointC.on('out', COutHandler);
       },
       epsilonSnap(point) {
         let roundedX = Math.round(point.X());
