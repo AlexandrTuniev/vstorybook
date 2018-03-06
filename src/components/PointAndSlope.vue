@@ -33,20 +33,20 @@
         default: 400,
         type: Number
       },
-      xMax: {
+      x1: {
         default: 10,
         type: Number,
       },
-      xMin: {
+      x2: {
         default: -10,
         type: Number
       },
-      yMax: {
-        default: 10,
+      y1: {
+        default: -10,
         type: Number,
       },
-      yMin: {
-        default: -10,
+      y2: {
+        default: 10,
         type: Number
       },
       ticksDistance: {
@@ -85,8 +85,9 @@
     },
     methods: {
       init() {
+
         let board = JXG.JSXGraph.initBoard('box', {
-          boundingbox: [this.xMin, this.yMin, this.xMax, this.yMax],
+          boundingbox: [this.x1, this.y1, this.x2, this.y2],
           showZoom: false,
           showNavigation: false,
           showCopyright: false,
@@ -237,7 +238,6 @@
               this.epsilonSnap(this[point]);
               this.createHelperLine(board, direction, this[point], helperOptions);
             }
-
             callback();
             break;
           case 'level2': // todo refactor
@@ -263,7 +263,7 @@
             }
             if (point === 'pointC') {
               // B can picked only on the same line as point A
-              if (Math.abs(coords.usrCoords[1] - this.pointB.X()) > this.epsilonY) {
+              if (Math.abs(coords.usrCoords[1] - this.pointB.X()) > this.epsilonX) {
                 return;
               }
               x = this.pointB.X();
@@ -298,35 +298,26 @@
         return true;
       },
       bindMovement(board) {
-        let ADragHandler, BDragHandler, CDragHandler;
+        let ADragHandler = () => { }, BDragHandler = () => { },
+          CDragHandler = () => { };
+        let AUpHandler = () => {
+          this.epsilonSnap(this.pointA);
+        };
+        let BUpHandler = () => {
+          this.epsilonSnap(this.pointB);
+        };
+        let CUpHandler = () => {
+          this.epsilonSnap(this.pointC);
+        };
         if (this.mode === 'level0') {// level 0 snapping based on epsilon
-          ADragHandler = () => {
-            this.epsilonSnap(this.pointA);
-          };
-          BDragHandler = () => {
-            this.epsilonSnap(this.pointB);
-          };
-          CDragHandler = () => {
-            this.epsilonSnap(this.pointC);
-          };
           if (this.pointA && this.pointB && this.pointC) {
             let g = board.create('group', [this.pointA, this.pointB, this.pointC]);
             g.removeTranslationPoint(this.pointB);
             g.removeTranslationPoint(this.pointC);
           }
         } else if (this.mode === 'level1') { // level 1
-          ADragHandler = () => {
-            this.epsilonSnap(this.pointA);
-          };
-          BDragHandler = () => {
-            this.epsilonSnap(this.pointB);
-          };
-          CDragHandler = () => {
-            this.epsilonSnap(this.pointC);
-          };
         } else if (this.mode === 'level2') {
           ADragHandler = () => {
-            this.epsilonSnap(this.pointA);
             if (this.pointB) {
               this.horizontalHelperLineAnchor && this.horizontalHelperLineAnchor
                 .rendNode.setAttribute("title", `Change in x=${this.pointA.Dist(this.pointB).toFixed(2)}`);
@@ -337,7 +328,6 @@
             }
           };
           BDragHandler = () => {
-            this.epsilonSnap(this.pointB);
             this.horizontalHelperLineAnchor && this.horizontalHelperLineAnchor
               .rendNode.setAttribute("title", `Change in X=${this.pointA.Dist(this.pointB).toFixed(2)}`);
             if (this.pointC) {
@@ -347,11 +337,11 @@
 
           };
           CDragHandler = () => {
-            this.epsilonSnap(this.pointC);
             this.verticalHelperLineAnchor && this.verticalHelperLineAnchor
               .rendNode.setAttribute("title", `Change in Y=${this.pointB.Dist(this.pointC).toFixed(2)}`);
           };
         }
+        // Drag handlers
         this.pointA.off('drag', ADragHandler);
         this.pointB && this.pointB.off('drag', BDragHandler);
         this.pointC && this.pointC.off('drag', CDragHandler);
@@ -359,6 +349,15 @@
         this.pointA.on('drag', ADragHandler);
         this.pointB && this.pointB.on('drag', BDragHandler);
         this.pointC && this.pointC.on('drag', CDragHandler);
+
+        // up handers for snaping
+        this.pointA.off('up', AUpHandler);
+        this.pointB && this.pointB.off('up', BUpHandler);
+        this.pointC && this.pointC.off('up', CUpHandler);
+
+        this.pointA.on('up', ADragHandler);
+        this.pointB && this.pointB.on('up', BUpHandler);
+        this.pointC && this.pointC.on('up', CUpHandler);
       },
       epsilonSnap(point) {
         let roundedX = Math.round(point.X());
