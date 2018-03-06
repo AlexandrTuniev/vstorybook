@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "lodash": "^4.17.5",
+    "selectable.js": "^0.10.4",
     "tippy.js": "^2.1.1",
     "v-tooltip": "^2.0.0-rc.31",
     "vue": "^2.5.9",

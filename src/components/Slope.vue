@@ -29,21 +29,21 @@
         default: false,
         type: Boolean,
       },
-      xMax: {
-        default: 10,
-        type: Number,
-      },
-      xMin: {
+      x1: {
         default: -10,
         type: Number
       },
-      yMax: {
+      x2: {
         default: 10,
         type: Number,
       },
-      yMin: {
-        default: -10,
+      y1: {
+        default: 10,
         type: Number
+      },
+      y2: {
+        default: -10,
+        type: Number,
       },
       ticksDistance: {
         default: 1,
@@ -63,7 +63,7 @@
     methods: {
       init() {
         return JXG.JSXGraph.initBoard('box', {
-          boundingbox: [this.xMin, this.yMin, this.xMax, this.yMax],
+          boundingbox: [this.x1, this.y1, this.x2, this.y2],
           showZoom: false,
           showNavigation: false,
           showCopyright: false,
@@ -171,23 +171,27 @@
             }, () => {
               return mp1.Y();
             }, "", ''], {
-              cssStyle: 'width: 25px; background:grey;',
-              fontSize: 25,
+              cssStyle: 'width: 40px; background:#FFFF00;box-shadow: #8bd 0 0 1px 2px, inset #6ae 0 0 2px 0;\n' +
+              '  border-color: #709AC0;\n' +
+              '  border-radius: 1px;',
+              fontSize: 15,
             });
             input2 = board.create('input', [() => {
               return mp2.X() - 2;
             }, () => {
               return mp2.Y() - 2;
             }, "", ''], {
-              cssStyle: 'width: 25px; background:grey;',
-              fontSize: 25
+              cssStyle: 'width: 40px; background:#FFFF00;box-shadow: #8bd 0 0 1px 2px, inset #6ae 0 0 2px 0;\n' +
+              '  border-color: #709AC0;\n' +
+              '  border-radius: 1px;',
+              fontSize: 15
             });
           }
         });
         board.on('update', () => {
           if (input1 && input2) {
             if (mp1.X() < mp2.X()) {
-              input1.setCoords(mp1.X() - 1.5, mp1.Y());
+              input1.setCoords(mp1.X() - 2.5, mp1.Y());
             } else {
               input1.setCoords(mp1.X() + 0.5, mp1.Y());
             }

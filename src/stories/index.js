@@ -19,6 +19,7 @@ import Numberline from '../components/Numberline.vue';
 import PointAndSlope from '../components/PointAndSlope.vue';
 import Factor from '../components/Factor.vue';
 import FactorList from '../components/FactorList.vue';
+import MathQuillStaticSelectable from '../components/MathQuillStaticSelectable.vue';
 import draggable from 'vuedraggable';
 import * as _ from 'lodash';
 import image from '../assets/arrow.png';
@@ -112,10 +113,10 @@ storiesOf("Welcome", module)
         pointA: array('PointA', ["-2", "-1"], ','),
         pointB: array('PointB', ["3", "4"], ','),
         boundingbox: object('Bounding box', {
-          xMax: 10,
-          xMin: -10,
-          yMax: 10,
-          yMin: -10
+          x1: -10,
+          x2: 10,
+          y1: 10,
+          y2: -10
         }),
         canvasHeight: number("Canvas height", 400),
         canvasWidth: number("Canvas width", 400),
@@ -124,10 +125,10 @@ storiesOf("Welcome", module)
       }
     },
     template: `<div style="width: 200px; height: 150px;">
-                    <Slope :x-max="boundingbox.xMax"
-                           :x-min="boundingbox.xMin"
-                           :y-max="boundingbox.yMax"
-                           :y-min="boundingbox.yMin"
+                    <Slope :x1="boundingbox.x1"
+                           :x2="boundingbox.x2"
+                           :y1="boundingbox.y1"
+                           :y2="boundingbox.y2"
                            :canvas-height="canvasHeight"
                            :canvas-width="canvasWidth"
                            :point-a="pointA" 
@@ -149,19 +150,19 @@ storiesOf("Welcome", module)
         canvasWidth: number("Canvas width", 400),
         ticksDistance: number("Ticks Distance", 1),
         boundingbox: object('Bounding box', {
-          xMax: 10,
-          xMin: -10,
-          yMax: 10,
-          yMin: -10
+          x1: -10,
+          x2: 10,
+          y1: 10,
+          y2: -10
         }),
       }
     },
     template: `<div style="width: 200px; height: 150px;">
                     <point-and-slope 
-                           :x-max="boundingbox.xMax"
-                           :x-min="boundingbox.xMin"
-                           :y-max="boundingbox.yMax"
-                           :y-min="boundingbox.yMin"
+                           :x1="boundingbox.x1"
+                           :x2="boundingbox.x2"
+                           :y1="boundingbox.y1"
+                           :y2="boundingbox.y2"
                            :canvas-height="canvasHeight"
                            :canvas-width="canvasWidth"
                            :ticks-distance="ticksDistance"
@@ -173,7 +174,6 @@ storiesOf("Welcome", module)
                </div>`,
     methods: {},
   }))
-
   .add('Factor-list with equation', () => ({
     components: { FactorList, Factor, MathQuillStatic, draggable },
     data() {
@@ -372,4 +372,18 @@ storiesOf("Welcome", module)
             event.relatedContext.component.$parent.dOptions.name === name);
       }
     },
+  }))
+  .add('Selectable Mathquill', () => ({
+    components: { MathQuillStaticSelectable },
+    data() {
+      return {
+        value: text('Value', 'x^2 - \\frac{245yxr}{x}')
+      }
+    },
+    template: `<div style="width: 200px; height: 150px;">
+                 <div style="font-size: 24px; display: flex;">
+                    <math-quill-static-selectable :value="value"/>
+                 </div>
+               </div>`,
+    methods: {},
   }));
