@@ -187,7 +187,6 @@
           });
         }
       },
-      // todo cleanup this, simplify  level1 and 2 share a lot in common, need to fix this
       pickPoint(point, coords, board, callback) {
         let options = {
           color: "#ED7D31",
@@ -198,48 +197,17 @@
           strokeWidth: 2,
           highlight: false,
         };
-        let x, y;
+        let x, y, epsilonX = this.epsilonX, epsilonY = this.epsilonY;
         let direction = '';
         switch (this.mode) {
           case 'level0':
             this[point] = board.create('point', [coords.usrCoords[1], coords.usrCoords[2]], options);
-            callback();
             break;
           case 'level1':
             helperOptions.strokeWidth = 0;
-            if (point === 'pointA') {
-              direction = 'horizontal';
-              x = coords.usrCoords[1];
-              y = coords.usrCoords[2];
-              this[point] = board.create('point', [x, y], options);
-              this.epsilonSnap(this[point]);
-              this.createHelperLine(board, direction, this[point], helperOptions);
-            }
-            if (point === 'pointB') {
-              // B can picked only on the same line as point A
-              if (Math.abs(coords.usrCoords[2] - this.pointA.Y()) > this.pickEpsilon) {
-                return;
-              }
-              direction = 'vertical';
-              x = coords.usrCoords[1];
-              y = this.pointA.Y();
-              this[point] = board.create('glider', [x, y, this.horizontalHelperLine], options);
-              this.epsilonSnap(this[point]);
-              this.createHelperLine(board, direction, this[point], helperOptions);
-            }
-            if (point === 'pointC') {
-              // B can picked only on the same line as point A
-              if (Math.abs(coords.usrCoords[1] - this.pointB.X()) > this.pickEpsilon) {
-                return;
-              }
-              x = this.pointB.X();
-              y = coords.usrCoords[2];
-              this[point] = board.create('glider', [x, y, this.verticalHelperLine], options);
-              this.epsilonSnap(this[point]);
-              this.createHelperLine(board, direction, this[point], helperOptions);
-            }
-            callback();
-            break;
+            epsilonX = this.pickEpsilon;
+            epsilonY = this.pickEpsilon;
+            // fallthrough
           case 'level2': // todo refactor
             if (point === 'pointA') {
               direction = 'horizontal';
@@ -251,7 +219,7 @@
             }
             if (point === 'pointB') {
               // B can picked only on the same line as point A
-              if (Math.abs(coords.usrCoords[2] - this.pointA.Y()) > this.epsilonY) {
+              if (Math.abs(coords.usrCoords[2] - this.pointA.Y()) > epsilonY) {
                 return;
               }
               direction = 'vertical';
@@ -263,7 +231,7 @@
             }
             if (point === 'pointC') {
               // B can picked only on the same line as point A
-              if (Math.abs(coords.usrCoords[1] - this.pointB.X()) > this.epsilonX) {
+              if (Math.abs(coords.usrCoords[1] - this.pointB.X()) > epsilonX) {
                 return;
               }
               x = this.pointB.X();
@@ -272,10 +240,9 @@
               this.epsilonSnap(this[point]);
               this.createHelperLine(board, direction, this[point], helperOptions);
             }
-            callback();
             break;
         }
-
+        callback();
       },
       createHelperLine(board, direction, point, options) {
         if (direction === 'horizontal') {
@@ -355,7 +322,7 @@
         this.pointB && this.pointB.off('up', BUpHandler);
         this.pointC && this.pointC.off('up', CUpHandler);
 
-        this.pointA.on('up', ADragHandler);
+        this.pointA.on('up', AUpHandler);
         this.pointB && this.pointB.on('up', BUpHandler);
         this.pointC && this.pointC.on('up', CUpHandler);
       },
