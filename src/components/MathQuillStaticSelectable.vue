@@ -164,7 +164,7 @@
   .highlight {
     background: #FED957;
   }
-
+  /*hiding mq native selection background*/
   .mq-math-mode .mq-selection,
   .mq-editable-field .mq-selection,
   .mq-math-mode .mq-selection .mq-non-leaf,
