@@ -4,6 +4,7 @@
   </div>
 </template>
 <script>
+  // Mathquill itself depends on jQuery, so jq is used here.
   if (typeof MathQuill === "undefined") {
     throw "MathQuill is undefined";
   }
@@ -27,26 +28,9 @@
         const MQ = MathQuill.getInterface(2);
         this.mathField = MQ.StaticMath(this.$refs.mathField);
         this.selectable = new Selectable({
-          filter: "[mathquill-command-id]:not([class])",
+          filter: "[mathquill-command-id]:not([class]),.mq-binary-operator[mathquill-command-id]",
           multiple: true,
           toggle: true,
-        });
-        let mousedownEvent;
-        jQuery(this.$refs.element).mousedown((event) => {
-          mousedownEvent = event;
-        });
-
-
-        let isClick = (upEvent, downEvent) => {
-          if (!downEvent) {
-            return false;
-          }
-          return (upEvent.clientX - downEvent.clientX === 0) && (upEvent.clientY - downEvent.clientY === 0);
-        };
-
-        let dragInplace = false;
-        this.selectable.on("selectable.drag", (e, coords) => {
-          dragInplace = coords.x2 < 40;
         });
         this.selectable.on("selectable.end", (event, selected, unselected) => {
           this.removeHighlights();
@@ -64,18 +48,79 @@
             if (prevR) {
               if (Math.abs((prevR.left + prevR.width) - left) < 0.1) {
                 prevR.width += width;
-                prevR.height = Math.max(prevR.height, height);
+                let topDiff = Math.abs(prevR.top - top);
                 prevR.top = Math.min(prevR.top, top);
+                prevR.height = Math.max(prevR.height, height) + topDiff;
                 continue;
               }
             }
             drawRectangles.push({
+              id: term.getAttribute('mathquill-command-id'),
               width: width,
               height: height,
               top: top,
               left: left
             });
+          }
 
+          let fractions = $('.mq-fraction');
+          for (let j = 0; j < fractions.length; j++) {
+            let anyNumSelected = $(fractions[j])
+              .find('.mq-numerator').find('.ui-selected');
+            let anyDenSelected = $(fractions[j])
+              .find('.mq-denominator').find('.ui-selected');
+            let anyOtherSelected = _.some(selectedNodes, (node) => {
+              return !$(fractions[j]).has(node).length;
+            });
+            let firstSelectedNumTermId = $(fractions[j])
+              .find('.mq-numerator').find('.ui-selected[mathquill-command-id]')
+              .first().attr('mathquill-command-id');
+            let firstSelectedDenTermId = $(fractions[j])
+              .find('.mq-denominator').find('.ui-selected[mathquill-command-id]')
+              .first().attr('mathquill-command-id');
+            let numRect = _.find(drawRectangles, (rec) => {
+              return rec.id === firstSelectedNumTermId;
+            });
+            let denRect = _.find(drawRectangles, (rec) => {
+              return rec.id === firstSelectedDenTermId;
+            });
+            let fractionBCR = $(fractions[j]).get(0).getBoundingClientRect();
+            if (anyNumSelected.length && anyDenSelected.length) {
+              numRect.width = fractionBCR.width;
+              numRect.height = fractionBCR.height;
+              numRect.top = fractionBCR.top;
+              numRect.left = fractionBCR.left;
+              if (denRect) {
+                denRect.ignore = true;
+              }
+            }
+            if (anyNumSelected.length && anyOtherSelected) {
+              numRect.width = fractionBCR.width;
+              numRect.height = fractionBCR.height;
+              numRect.top = fractionBCR.top;
+              numRect.left = fractionBCR.left;
+              if (denRect) {
+                denRect.ignore = true;
+              }
+            } else if (anyDenSelected.length && anyOtherSelected) {
+              denRect.width = fractionBCR.width;
+              denRect.height = fractionBCR.height;
+              denRect.top = fractionBCR.top;
+              denRect.left = fractionBCR.left;
+            }
+          }
+          drawRectangles = _.filter(drawRectangles, (r) => {return !r.ignore});
+          let i = drawRectangles.length;
+          while (i--) {
+            let curRect = drawRectangles[i];
+            let nextRect = drawRectangles[i + 1];
+            if (nextRect && Math.abs((curRect.left + curRect.width) - nextRect.left) < 0.1) {
+              curRect.width += nextRect.width;
+              curRect.top = Math.min(curRect.top, nextRect.top);
+              curRect.height = Math.max(curRect.height, nextRect.height);
+              nextRect.ignore = true;
+              drawRectangles.splice(i + 1, 1);
+            }
           }
           this.drawRectangles(drawRectangles);
           if (selected.length === 0) {
